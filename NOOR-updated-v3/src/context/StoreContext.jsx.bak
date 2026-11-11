@@ -1,0 +1,16 @@
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+const StoreContext = createContext(null)
+export function StoreProvider({children}) {
+  const [user,setUser] = useState(() => JSON.parse(localStorage.getItem('noorUser') || 'null'))
+  const [cart,setCart] = useState(() => JSON.parse(localStorage.getItem('noorCart') || '[]'))
+  useEffect(()=>{ user ? localStorage.setItem('noorUser',JSON.stringify(user)) : localStorage.removeItem('noorUser') },[user])
+  useEffect(()=>localStorage.setItem('noorCart',JSON.stringify(cart)),[cart])
+  const login = (payload) => setUser({name:payload.name || payload.username || 'NOOR Guest', email:payload.email || payload.username || ''})
+  const logout = () => setUser(null)
+  const addToCart = (product,size='M') => setCart(prev=>{ const found=prev.find(i=>i.id===product.id && i.size===size); return found ? prev.map(i=>i.id===product.id&&i.size===size?{...i,qty:i.qty+1}:i) : [...prev,{id:product.id,size,qty:1}] })
+  const removeFromCart = (id,size) => setCart(prev=>prev.filter(i=>!(i.id===id&&i.size===size)))
+  const updateQty = (id,size,qty) => setCart(prev=>prev.map(i=>i.id===id&&i.size===size?{...i,qty:Math.max(1,qty)}:i))
+  const count = cart.reduce((n,i)=>n+i.qty,0)
+  return <StoreContext.Provider value={{user,login,logout,cart,addToCart,removeFromCart,updateQty,count}}>{children}</StoreContext.Provider>
+}
+export const useStore=()=>useContext(StoreContext)
